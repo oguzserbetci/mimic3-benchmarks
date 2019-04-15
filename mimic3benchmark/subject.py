@@ -51,6 +51,11 @@ def add_hours_elpased_to_events(events, dt, remove_charttime=True):
     return events
 
 
+def include_hours_elapsed_to_events(events, dt, remove_charttime=True):
+    events['HOURS'] = (events.CHARTTIME - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
+    return events
+
+
 def convert_events_to_timeseries(events, variable_column='VARIABLE', variables=[]):
     metadata = events[['CHARTTIME', 'ICUSTAY_ID']].sort_values(by=['CHARTTIME', 'ICUSTAY_ID'])\
                     .drop_duplicates(keep='first').set_index('CHARTTIME')
@@ -62,6 +67,13 @@ def convert_events_to_timeseries(events, variable_column='VARIABLE', variables=[
     for v in variables:
         if v not in timeseries:
             timeseries[v] = np.nan
+    return timeseries
+
+
+def sort_events(events, variable_column='ITEMID', variables=[]):
+    metadata = events[['CHARTTIME', 'ICUSTAY_ID']].sort_values(by=['CHARTTIME', 'ICUSTAY_ID'])\
+                    .drop_duplicates(keep='first').set_index('CHARTTIME')
+    timeseries = events.sort_values(by=['CHARTTIME'], axis=0)
     return timeseries
 
 

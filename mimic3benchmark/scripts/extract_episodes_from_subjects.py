@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import pandas as pd
 import argparse
 
 import os
 import sys
 
-from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, get_events_for_stay, add_hours_elpased_to_events
-from mimic3benchmark.subject import convert_events_to_timeseries, get_first_valid_from_timeseries
+from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, get_events_for_stay, add_hours_elpased_to_events, include_hours_elpased_to_events
+from mimic3benchmark.subject import convert_events_to_timeseries, sort_events, get_first_valid_from_timeseries
 from mimic3benchmark.preprocessing import read_itemid_to_variable_map, map_itemids_to_variables, read_variable_ranges, clean_events
 from mimic3benchmark.preprocessing import transform_gender, transform_ethnicity, assemble_episodic_data
 
@@ -17,11 +18,15 @@ parser.add_argument('subjects_root_path', type=str, help='Directory containing s
 parser.add_argument('--variable_map_file', type=str,
                     default=os.path.join(os.path.dirname(__file__), '../resources/itemid_to_variable_map.csv'),
                     help='CSV containing ITEMID-to-VARIABLE map.')
+parser.add_argument('--mimic', type=str, default='~/MIMIC-III')
 parser.add_argument('--reference_range_file', type=str,
                     default=os.path.join(os.path.dirname(__file__), '../resources/variable_ranges.csv'),
                     help='CSV containing reference ranges for VARIABLEs.')
 parser.add_argument('--verbose', '-v', type=int, help='Level of verbosity in output.', default=1)
 args, _ = parser.parse_known_args()
+
+d_items = pd.read_csv(args.ditems + '/D_ITEMS.csv')
+d_labitems = pd.read_csv(args.ditems + '/D_LABITEMS.csv')
 
 var_map = read_itemid_to_variable_map(args.variable_map_file)
 variables = var_map.VARIABLE.unique()
@@ -54,12 +59,14 @@ for subject_dir in os.listdir(args.subjects_root_path):
 
     sys.stdout.write('cleaning and converting to time series...')
     sys.stdout.flush()
+    all_events = events.copy()
     events = map_itemids_to_variables(events, var_map)
     events = clean_events(events)
     if events.shape[0] == 0:
         sys.stdout.write('no valid events!\n')
         continue
     timeseries = convert_events_to_timeseries(events, variables=variables)
+    eventful_timeseries = sort_events(all_events, variables=variables)
 
     sys.stdout.write('extracting separate episodes...')
     sys.stdout.flush()
@@ -72,6 +79,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
         outtime = stays.OUTTIME.iloc[i]
 
         episode = get_events_for_stay(timeseries, stay_id, intime, outtime)
+        eventful_episode = get_events_for_stay(eventful_timeseries, stay_id, intime, outtime)
         if episode.shape[0] == 0:
             sys.stdout.write(' (no data!)')
             sys.stdout.flush()
@@ -85,4 +93,10 @@ for subject_dir in os.listdir(args.subjects_root_path):
         columns_sorted = sorted(columns, key=(lambda x: "" if x == "Hours" else x))
         episode = episode[columns_sorted]
         episode.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries.csv'.format(i+1)), index_label='Hours')
+
+        for label, table in [('lab', d_labitems), ('hist', d_items)]:
+            events = pd.merge(eventful_episode, table[['ITEMID','LABEL']], on='ITEMID', how='inner')
+            events = include_hours_elapsed_to_events(events, intime).set_index('HOURS').sort_index(axis=0)
+            events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_full_{}.csv'.format(i+1, label)), index_label='Hours')
+
     sys.stdout.write(' DONE!\n')
