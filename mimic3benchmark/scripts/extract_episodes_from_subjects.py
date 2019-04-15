@@ -7,7 +7,7 @@ import argparse
 import os
 import sys
 
-from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, get_events_for_stay, add_hours_elpased_to_events, include_hours_elpased_to_events
+from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, get_events_for_stay, add_hours_elapsed_to_events, include_hours_elpased_to_events
 from mimic3benchmark.subject import convert_events_to_timeseries, sort_events, get_first_valid_from_timeseries
 from mimic3benchmark.preprocessing import read_itemid_to_variable_map, map_itemids_to_variables, read_variable_ranges, clean_events
 from mimic3benchmark.preprocessing import transform_gender, transform_ethnicity, assemble_episodic_data
