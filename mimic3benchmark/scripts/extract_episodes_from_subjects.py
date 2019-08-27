@@ -26,7 +26,7 @@ parser.add_argument('--verbose', '-v', type=int, help='Level of verbosity in out
 args, _ = parser.parse_known_args()
 
 d_items = pd.read_csv(args.mimic + '/D_ITEMS.csv')
-d_labitems = pd.read_csv(args.ditems + '/D_LABITEMS.csv')
+d_labitems = pd.read_csv(args.mimic + '/D_LABITEMS.csv')
 
 var_map = read_itemid_to_variable_map(args.variable_map_file)
 variables = var_map.VARIABLE.unique()
