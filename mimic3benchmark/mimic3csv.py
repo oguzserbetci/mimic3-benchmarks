@@ -44,12 +44,29 @@ def read_icd_diagnoses_table(mimic3_path):
 
 
 def read_events_table_by_row(mimic3_path, table):
-    nb_rows = {'chartevents': 330712484, 'labevents': 27854056, 'outputevents': 4349219}
+    nb_rows = {'chartevents': 330712484,
+               'labevents': 27854056,
+               'outputevents': 4349219,
+               'diagnoses_icd': 651048,
+               'inputevents_cv': 17527936,
+               'inputevents_mv': 3618992,
+               'noteevents': 91691299,
+               'outputevents': 4349219,
+               'prescriptions': 4156451,
+               'procedures_icd': 240096,
+               'services': 73344}
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
-        if 'ICUSTAY_ID' not in row:
-            row['ICUSTAY_ID'] = ''
+        # if 'ICUSTAY_ID' not in row:
+        #     row['ICUSTAY_ID'] = ''
         yield row, i, nb_rows[table.lower()]
+
+
+def read_events_table_header(mimic3_path, table):
+    f = open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r')
+    header = csv.reader(f).__next__()
+    f.close()
+    return header
 
 
 def count_icd_codes(diagnoses, output_path=None):
@@ -148,7 +165,9 @@ def break_up_diagnoses_by_subject(diagnoses, output_path, subjects=None, verbose
 
 
 def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, items_to_keep=None, subjects_to_keep=None, verbose=1):
-    obs_header = ['SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM']
+    # obs_header = ['SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM']
+    obs_header = read_events_table_header(mimic3_path, table)
+    print(obs_header)
     if items_to_keep is not None:
         items_to_keep = set([str(s) for s in items_to_keep])
     if subjects_to_keep is not None:
@@ -173,7 +192,7 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
             os.makedirs(dn)
         except:
             pass
-        fn = os.path.join(dn, 'events.csv')
+        fn = os.path.join(dn, table.lower() + '.csv')
         if not os.path.exists(fn) or not os.path.isfile(fn):
             f = open(fn, 'w')
             f.write(','.join(obs_header) + '\n')
@@ -198,16 +217,16 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
         if (items_to_keep is not None) and (row['ITEMID'] not in items_to_keep):
             continue
 
-        row_out = {'SUBJECT_ID': row['SUBJECT_ID'],
-                   'HADM_ID': row['HADM_ID'],
-                   'ICUSTAY_ID': '' if 'ICUSTAY_ID' not in row else row['ICUSTAY_ID'],
-                   'CHARTTIME': row['CHARTTIME'],
-                   'ITEMID': row['ITEMID'],
-                   'VALUE': row['VALUE'],
-                   'VALUEUOM': row['VALUEUOM']}
+        # row_out = {'SUBJECT_ID': row['SUBJECT_ID'],
+        #            'HADM_ID': row['HADM_ID'],
+        #            'ICUSTAY_ID': '' if 'ICUSTAY_ID' not in row else row['ICUSTAY_ID'],
+        #            'CHARTTIME': row['CHARTTIME'],
+        #            'ITEMID': row['ITEMID'],
+        #            'VALUE': row['VALUE'],
+        #            'VALUEUOM': row['VALUEUOM']}
         if data_stats.curr_subject_id != '' and data_stats.curr_subject_id != row['SUBJECT_ID']:
             write_current_observations()
-        data_stats.curr_obs.append(row_out)
+        data_stats.curr_obs.append(row)
         data_stats.curr_subject_id = row['SUBJECT_ID']
 
     if data_stats.curr_subject_id != '':
