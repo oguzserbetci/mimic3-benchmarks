@@ -39,7 +39,7 @@ def read_events_tables(subject_path, remove_null=True):
     for table in ['chartevents', 'labevents', 'outputevents', 'prescriptions', 'noteevents', 'diagnoses_icd', 'procedures_icd', 'services', 'inputevents_cv', 'inputevents_mv']:
         events = dataframe_from_csv(os.path.join(subject_path, table + '.csv'), index_col=None)
         if remove_null:
-            events = events.dropna()]
+            events = events.dropna()
         # events.CHARTTIME = pd.to_datetime(events.CHARTTIME)
         # if events.CHARTDATE:
         #     events.CHARTDATE = pd.to_datetime(events.CHARTDATE)
