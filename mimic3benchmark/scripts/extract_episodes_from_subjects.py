@@ -28,8 +28,8 @@ args, _ = parser.parse_known_args()
 d_tables = {
     'charttime': pd.read_csv(args.mimic + '/D_ITEMS.csv'),
     'labevents': pd.read_csv(args.mimic + '/D_LABITEMS.csv'),
-    'diagnoses_icd': pd.read_csv(args.mimic + '/D_ICD_DIAGNOSES'),
-    'procedures_icd': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES')
+    'diagnoses_icd': pd.read_csv(args.mimic + '/D_ICD_DIAGNOSES.csv'),
+    'procedures_icd': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES.csv')
 }
 
 var_map = read_itemid_to_variable_map(args.variable_map_file)
