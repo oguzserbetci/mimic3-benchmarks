@@ -96,3 +96,9 @@ ENV/
 # States of models
 keras_states/
 states/
+data/
+*log*
+/tags
+/GRTAGS
+/GTAGS
+/GPATH
