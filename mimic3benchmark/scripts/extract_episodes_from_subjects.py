@@ -25,8 +25,12 @@ parser.add_argument('--reference_range_file', type=str,
 parser.add_argument('--verbose', '-v', type=int, help='Level of verbosity in output.', default=1)
 args, _ = parser.parse_known_args()
 
-d_items = pd.read_csv(args.mimic + '/D_ITEMS.csv')
-d_labitems = pd.read_csv(args.mimic + '/D_LABITEMS.csv')
+d_tables = {
+    'charttime': pd.read_csv(args.mimic + '/D_ITEMS.csv'),
+    'labevents': pd.read_csv(args.mimic + '/D_LABITEMS.csv'),
+    'diagnoses_icd': pd.read_csv(args.mimic + '/D_ICD_DIAGNOSES'),
+    'procedures_icd': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES')
+}
 
 var_map = read_itemid_to_variable_map(args.variable_map_file)
 variables = var_map.VARIABLE.unique()
@@ -48,6 +52,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
         stays = read_stays(os.path.join(args.subjects_root_path, subject_dir))
         diagnoses = read_diagnoses(os.path.join(args.subjects_root_path, subject_dir))
         events = read_events(os.path.join(args.subjects_root_path, subject_dir))
+        all_events_tables = read_events_tables(os.path.join(args.subjects_root_path, subject_dir))
     except:
         sys.stdout.write('error reading from disk!\n')
         continue
@@ -59,14 +64,12 @@ for subject_dir in os.listdir(args.subjects_root_path):
 
     sys.stdout.write('cleaning and converting to time series...')
     sys.stdout.flush()
-    all_events = events.copy()
     events = map_itemids_to_variables(events, var_map)
     events = clean_events(events)
     if events.shape[0] == 0:
         sys.stdout.write('no valid events!\n')
         continue
     timeseries = convert_events_to_timeseries(events, variables=variables)
-    eventful_timeseries = sort_events(all_events, variables=variables)
 
     sys.stdout.write('extracting separate episodes...')
     sys.stdout.flush()
@@ -79,7 +82,6 @@ for subject_dir in os.listdir(args.subjects_root_path):
         outtime = stays.OUTTIME.iloc[i]
 
         episode = get_events_for_stay(timeseries, stay_id, intime, outtime)
-        eventful_episode = get_events_for_stay(eventful_timeseries, stay_id, intime, outtime)
         if episode.shape[0] == 0:
             sys.stdout.write(' (no data!)')
             sys.stdout.flush()
@@ -94,9 +96,15 @@ for subject_dir in os.listdir(args.subjects_root_path):
         episode = episode[columns_sorted]
         episode.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries.csv'.format(i+1)), index_label='Hours')
 
-        for label, table in [('lab', d_labitems), ('hist', d_items)]:
-            events = pd.merge(eventful_episode, table[['ITEMID','LABEL']], on='ITEMID', how='inner')
+        for table, all_events in all_events_tables:
+            all_events = sort_events(all_events, variables=variables)
+            all_events = get_events_for_stay(all_events, stay_id, intime, outtime)
+
+            id_columns = list({'ITEMID', 'ICD9_CODE'} & events.columns)
+            label_columns = list({'SHORT_TITLE','LONG_TITLE'} & events.columns)
+
+            all_events = pd.merge(all_events, d_tables[table][id_columns + label_columns], on=id_columns, how='inner')
             events = include_hours_elapsed_to_events(events, intime).set_index('HOURS').sort_index(axis=0)
-            events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_full_{}.csv'.format(i+1, label)), index_label='Hours')
+            events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_{}.csv'.format(i+1, table)), index_label='Hours')
 
     sys.stdout.write(' DONE!\n')
