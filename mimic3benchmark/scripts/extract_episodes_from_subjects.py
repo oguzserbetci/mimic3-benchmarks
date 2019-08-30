@@ -7,7 +7,7 @@ import argparse
 import os
 import sys
 
-from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, get_events_for_stay, add_hours_elpased_to_events, include_hours_elapsed_to_events
+from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, read_events_tables, get_events_for_stay, add_hours_elpased_to_events, include_hours_elapsed_to_events
 from mimic3benchmark.subject import convert_events_to_timeseries, sort_events, get_first_valid_from_timeseries
 from mimic3benchmark.preprocessing import read_itemid_to_variable_map, map_itemids_to_variables, read_variable_ranges, clean_events
 from mimic3benchmark.preprocessing import transform_gender, transform_ethnicity, assemble_episodic_data
@@ -25,8 +25,14 @@ parser.add_argument('--reference_range_file', type=str,
 parser.add_argument('--verbose', '-v', type=int, help='Level of verbosity in output.', default=1)
 args, _ = parser.parse_known_args()
 
+d_items = pd.read_csv(args.mimic + '/D_ITEMS.csv')
 d_tables = {
-    'charttime': pd.read_csv(args.mimic + '/D_ITEMS.csv'),
+    'chartevents': d_items,
+    'procedureevents_mv': d_items,
+    'outputevents': d_items,
+    'inputevents_mv': d_items,
+    'inputevents_cv': d_items,
+    'datetimeevents': d_items,
     'labevents': pd.read_csv(args.mimic + '/D_LABITEMS.csv'),
     'diagnoses_icd': pd.read_csv(args.mimic + '/D_ICD_DIAGNOSES.csv'),
     'procedures_icd': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES.csv')
@@ -53,8 +59,8 @@ for subject_dir in os.listdir(args.subjects_root_path):
         diagnoses = read_diagnoses(os.path.join(args.subjects_root_path, subject_dir))
         events = read_events(os.path.join(args.subjects_root_path, subject_dir))
         all_events_tables = read_events_tables(os.path.join(args.subjects_root_path, subject_dir))
-    except:
-        sys.stdout.write('error reading from disk!\n')
+    except Exception as e:
+        sys.stdout.write(f'error reading from disk!: {e}\n')
         continue
     else:
         sys.stdout.write('got {0} stays, {1} diagnoses, {2} events...'.format(stays.shape[0], diagnoses.shape[0], events.shape[0]))
@@ -71,7 +77,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
         continue
     timeseries = convert_events_to_timeseries(events, variables=variables)
 
-    sys.stdout.write('extracting separate episodes...')
+    sys.stdout.write(f'extracting separate episodes... in {subject_dir}')
     sys.stdout.flush()
 
     for i in range(stays.shape[0]):
@@ -100,11 +106,17 @@ for subject_dir in os.listdir(args.subjects_root_path):
             all_events = sort_events(all_events, variables=variables)
             all_events = get_events_for_stay(all_events, stay_id, intime, outtime)
 
-            id_columns = list({'ITEMID', 'ICD9_CODE'} & events.columns)
-            label_columns = list({'SHORT_TITLE','LONG_TITLE'} & events.columns)
+            if table in d_tables:
+                id_columns = [col for col in events.columns if col in {'ITEMID', 'ICD9_CODE'}]
+                d_table = d_tables[table]
+                label_columns = [col for col in d_table.columns if col in {'SHORT_TITLE','LONG_TITLE','LABEL'}]
+                all_events = pd.merge(all_events, d_table[id_columns + label_columns], on=id_columns, how='inner')
+            all_events = include_hours_elapsed_to_events(all_events, intime).set_index('HOURS').sort_index(axis=0)
 
-            all_events = pd.merge(all_events, d_tables[table][id_columns + label_columns], on=id_columns, how='inner')
-            events = include_hours_elapsed_to_events(events, intime).set_index('HOURS').sort_index(axis=0)
-            events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_{}.csv'.format(i+1, table)), index_label='Hours')
+            columns = list(all_events.columns)
+            columns_sorted = sorted(all_events, key=(lambda x: "" if x == "Hours" else x))
+            all_events = all_events[columns_sorted]
+
+            all_events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_{}.csv'.format(i+1, table)), index_label='Hours')
 
     sys.stdout.write(' DONE!\n')

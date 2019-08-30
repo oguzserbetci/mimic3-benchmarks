@@ -47,6 +47,7 @@ def read_events_table_by_row(mimic3_path, table):
     nb_rows = {'chartevents': 330712484,
                'labevents': 27854056,
                'outputevents': 4349219,
+               'datetimeevents': 4485937,
                'diagnoses_icd': 651048,
                'inputevents_cv': 17527936,
                'inputevents_mv': 3618992,
@@ -54,6 +55,7 @@ def read_events_table_by_row(mimic3_path, table):
                'outputevents': 4349219,
                'prescriptions': 4156451,
                'procedures_icd': 240096,
+               'procedureevents_mv': 258066,
                'services': 73344}
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
@@ -165,9 +167,15 @@ def break_up_diagnoses_by_subject(diagnoses, output_path, subjects=None, verbose
 
 
 def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, items_to_keep=None, subjects_to_keep=None, verbose=1):
-    # obs_header = ['SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM']
-    obs_header = read_events_table_header(mimic3_path, table)
-    print(obs_header)
+    obs_header = {'SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM',
+                  'ICD9_CODE', 'SEQ_NUM'
+                  'STARTTIME', 'ENDTIME', 'STARTTIME', 'STARTDATE', 'ENDTIME', 'ENDDATE'
+                  'RATE', 'RATEUOM', 'ORDERCATEGORYNAME', 'SECONDARYCATEGORYNAME', 'PATIENTWEIGHT', 'CANCELREASON',
+                  'CHARTDATE', 'CATEGORY', 'DESCRIPTION', 'TEXT',
+                  'DRUG_TYPE', 'DRUG', 'DRUG_NAME_POE', 'DRUG_NAME_GENERIC', 'FORMULARY_DRUG_CD', 'GSN', 'NDC', 'PROD_STRENGTH', 'DOSE_VAL_RX', 'DOSE_UNIT_RX',
+                  'PREV_SERVICE', 'CURR_SERVICE'}
+    file_header = read_events_table_header(mimic3_path, table)
+    obs_header = [col for col in file_header if col in obs_header]
     if items_to_keep is not None:
         items_to_keep = set([str(s) for s in items_to_keep])
     if subjects_to_keep is not None:
@@ -192,13 +200,19 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
             os.makedirs(dn)
         except:
             pass
-        fn = os.path.join(dn, table.lower() + '.csv')
-        if not os.path.exists(fn) or not os.path.isfile(fn):
-            f = open(fn, 'w')
-            f.write(','.join(obs_header) + '\n')
-            f.close()
+        fn = os.path.join(dn, 'events.csv')
+        tn = os.path.join(dn, table.lower() + '.csv')
+        if not os.path.isfile(fn):
+            with open(fn, 'w') as f:
+                f.write(','.join(obs_header) + '\n')
+        if not os.path.isfile(tn):
+            with open(tn, 'w') as f:
+                f.write(','.join(obs_header) + '\n')
         w = csv.DictWriter(open(fn, 'a'), fieldnames=obs_header, quoting=csv.QUOTE_MINIMAL)
-        w.writerows(data_stats.curr_obs)
+        wt = csv.DictWriter(open(tn, 'a'), fieldnames=obs_header, quoting=csv.QUOTE_MINIMAL)
+        if table.lower() in ['chartevents', 'labevents', 'outputevents']:
+            w.writerows(data_stats.curr_obs)
+        wt.writerows(data_stats.curr_obs)
         data_stats.curr_obs = []
 
     for row, row_no, nb_rows in read_events_table_by_row(mimic3_path, table):
@@ -217,16 +231,10 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
         if (items_to_keep is not None) and (row['ITEMID'] not in items_to_keep):
             continue
 
-        # row_out = {'SUBJECT_ID': row['SUBJECT_ID'],
-        #            'HADM_ID': row['HADM_ID'],
-        #            'ICUSTAY_ID': '' if 'ICUSTAY_ID' not in row else row['ICUSTAY_ID'],
-        #            'CHARTTIME': row['CHARTTIME'],
-        #            'ITEMID': row['ITEMID'],
-        #            'VALUE': row['VALUE'],
-        #            'VALUEUOM': row['VALUEUOM']}
         if data_stats.curr_subject_id != '' and data_stats.curr_subject_id != row['SUBJECT_ID']:
             write_current_observations()
-        data_stats.curr_obs.append(row)
+        row_out = {k: v for k, v in row.items() if k in obs_header}
+        data_stats.curr_obs.append(row_out)
         data_stats.curr_subject_id = row['SUBJECT_ID']
 
     if data_stats.curr_subject_id != '':

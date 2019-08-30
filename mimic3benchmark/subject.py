@@ -36,27 +36,67 @@ def read_events(subject_path, remove_null=True):
 
 
 def read_events_tables(subject_path, remove_null=True):
-    for table in ['chartevents', 'labevents', 'outputevents', 'prescriptions', 'noteevents', 'diagnoses_icd', 'procedures_icd', 'services', 'inputevents_cv', 'inputevents_mv']:
-        events = dataframe_from_csv(os.path.join(subject_path, table + '.csv'), index_col=None)
+    for table in ['chartevents', 'labevents', 'datetimeevents', 'outputevents', 'noteevents', 'inputevents_cv', 'inputevents_mv', 'procedureevents_mv', 'prescriptions']:
+        try:
+            events = dataframe_from_csv(os.path.join(subject_path, table + '.csv'), index_col=None)
+        except:
+            print(subject_path, 'doesn\'t have', table)
+            continue
         if remove_null:
             events = events.dropna()
-        # events.CHARTTIME = pd.to_datetime(events.CHARTTIME)
-        # if events.CHARTDATE:
-        #     events.CHARTDATE = pd.to_datetime(events.CHARTDATE)
 
-        # events.HADM_ID = events.HADM_ID.fillna(value=-1).astype(int)
-        # events.ICUSTAY_ID = events.ICUSTAY_ID.fillna(value=-1).astype(int)
-        # events.VALUEUOM = events.VALUEUOM.fillna('').astype(str)
-        events.sort_values(by=['CHARTTIME', 'ITEMID', 'ICUSTAY_ID'], inplace=True)
+        sort_columns = []
+        if 'CHARTTIME' in events:
+            sort_columns.append('CHARTTIME')
+            events.CHARTTIME = pd.to_datetime(events.CHARTTIME)
+        if 'CHARTDATE' in events:
+            events.CHARTDATE = pd.to_datetime(events.CHARTDATE)
+        if 'STARTTIME' in events:
+            sort_columns.append('STARTTIME')
+            events.STARTTIME = pd.to_datetime(events.STARTTIME)
+        if 'STARTDATE' in events:
+            sort_columns.append('STARTDATE')
+            events.STARTDATE = pd.to_datetime(events.STARTDATE)
+
+        if 'ITEMID' in events:
+            sort_columns.append('ITEMID')
+        events.HADM_ID = events.HADM_ID.fillna(value=-1).astype(int)
+        if 'ICUSTAY_ID' in events:
+            try:
+                events.ICUSTAY_ID = events.ICUSTAY_ID.fillna(value=-1).astype(int)
+            except:
+                print(table, events.ICUSTAY_ID)
+            sort_columns.append('ICUSTAY_ID')
+        if 'VALUEUOM' in events:
+            events.VALUEUOM = events.VALUEUOM.fillna('').astype(str)
+        try:
+            events.sort_values(by=sort_columns, inplace=True)
+        except:
+            print(sort_columns, events)
+            raise ValueError
+
         yield table, events
 
 
 def get_events_for_stay(events, icustayid, intime=None, outtime=None):
-    idx = (events.ICUSTAY_ID == icustayid)
+    time_column = list({'CHARTTIME', 'STARTDATE', 'STARTTIME'} & set(events.columns))[0]
+    if 'ICUSTAY_ID' in events:
+        idx = (events.ICUSTAY_ID == icustayid)
+    elif time_column in events:
+        assert intime is not None and outtime is not None
+        idx = ((events[time_column] >= intime) & (events[time_column] <= outtime))
+    else:
+        raise ValueError
+
     if intime is not None and outtime is not None:
-        idx = idx | ((events.CHARTTIME >= intime) & (events.CHARTTIME <= outtime))
+        if time_column in events:
+            idx = idx | ((events[time_column] >= intime) & (events[time_column] <= outtime))
+        else:
+            raise ValueError
+
     events = events.ix[idx]
-    del events['ICUSTAY_ID']
+    if 'ICUSTAY_ID' in events:
+        del events['ICUSTAY_ID']
     return events
 
 
@@ -68,7 +108,11 @@ def add_hours_elpased_to_events(events, dt, remove_charttime=True):
 
 
 def include_hours_elapsed_to_events(events, dt, remove_charttime=True):
-    events['HOURS'] = (events.CHARTTIME - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
+    if 'CHARTTIME' in events and 'CHARTDATE' in events:
+        event_times = events.CHARTTIME.fillna(events.CHARTDATE)
+    else:
+        event_times = events[events.columns & ['CHARTTIME', 'STARTTIME', 'STARTDATE']].ix[:,0]
+    events['HOURS'] = (event_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
     return events
 
 
@@ -87,9 +131,8 @@ def convert_events_to_timeseries(events, variable_column='VARIABLE', variables=[
 
 
 def sort_events(events, variable_column='ITEMID', variables=[]):
-    metadata = events[['CHARTTIME', 'ICUSTAY_ID']].sort_values(by=['CHARTTIME', 'ICUSTAY_ID'])\
-                    .drop_duplicates(keep='first').set_index('CHARTTIME')
-    timeseries = events.sort_values(by=['CHARTTIME'], axis=0)
+    time_column = list({'CHARTTIME', 'STARTDATE', 'STARTTIME'} & set(events.columns))
+    timeseries = events.sort_values(by=time_column, axis=0)
     return timeseries
 
 
