@@ -91,6 +91,8 @@ Here are the required steps to build the benchmark. It assumes that you already 
 
        python -m mimic3benchmark.scripts.extract_episodes_from_subjects data/root/
 
+       python -m mimic3benchmark.scripts.extract_all_episodes_from_subjects data/root/
+
 5. The next command splits the whole dataset into training and testing sets. Note that the train/test split is the same of all tasks.
 
        python -m mimic3benchmark.scripts.split_train_and_test data/root/

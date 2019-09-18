@@ -21,43 +21,43 @@ def process_partition(args, partition, eps=1e-6, n_hours=48):
         patient_ts_files = list(filter(lambda x: x.find("timeseries") != -1, os.listdir(patient_folder)))
 
         for ts_filename in patient_ts_files:
-            with open(os.path.join(patient_folder, ts_filename)) as tsfile:
-                lb_filename = re.sub(r"_timeseries[a-z_]*", "", ts_filename)
+            if "_all.csv" in ts_filename:
+                continue
+
+            lb_filename = re.sub(r"_timeseries[a-z_]*", "", ts_filename)
+            try:
                 label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))
+            except:
+                continue
 
-                # empty label file
-                if label_df.shape[0] == 0:
-                    continue
+            # empty label file
+            if label_df.shape[0] == 0:
+                continue
 
-                mortality = int(label_df.iloc[0]["Mortality"])
-                los = 24.0 * label_df.iloc[0]['Length of Stay']  # in hours
-                if pd.isnull(los):
-                    print("\n\t(length of stay is missing)", patient, ts_filename)
-                    continue
+            mortality = int(label_df.iloc[0]["Mortality"])
+            los = 24.0 * label_df.iloc[0]['Length of Stay']  # in hours
+            if pd.isnull(los):
+                print("\n\t(length of stay is missing)", patient, ts_filename)
+                continue
 
-                if los < n_hours - eps:
-                    continue
+            if los < n_hours - eps:
+                continue
 
-                ts_lines = tsfile.readlines()
-                header = ts_lines[0]
-                ts_lines = ts_lines[1:]
-                event_times = [float(line.split(',')[0]) for line in ts_lines]
 
-                ts_lines = [line for (line, t) in zip(ts_lines, event_times)
-                            if -eps < t < n_hours + eps]
+            df = pd.read_csv(os.path.join(patient_folder, ts_filename))
+            header = df.columns
+            ts_lines = df[(-eps < df["Hours"]) & (df["Hours"] < n_hours + eps)]
+            event_times = ts_lines.Hours
 
-                # no measurements in ICU
-                if len(ts_lines) == 0:
-                    print("\n\t(no events in ICU) ", patient, ts_filename)
-                    continue
+            # no measurements in ICU
+            if len(ts_lines) == 0:
+                print("\n\t(no events in ICU) ", patient, ts_filename)
+                continue
 
-                output_ts_filename = patient + "_" + ts_filename
-                with open(os.path.join(output_dir, output_ts_filename), "w") as outfile:
-                    outfile.write(header)
-                    for line in ts_lines:
-                        outfile.write(line)
+            output_ts_filename = patient + "_" + ts_filename
+            ts_lines.to_csv(os.path.join(output_dir, output_ts_filename), index=False)
 
-                xy_pairs.append((output_ts_filename, mortality))
+            xy_pairs.append((output_ts_filename, mortality))
 
         if (patient_index + 1) % 100 == 0:
             print("processed {} / {} patients".format(patient_index + 1, len(patients)), end='\r')

@@ -57,9 +57,16 @@ def read_events_tables(subject_path, remove_null=True):
         if 'STARTDATE' in events:
             sort_columns.append('STARTDATE')
             events.STARTDATE = pd.to_datetime(events.STARTDATE)
+        if 'ENDTIME' in events:
+            sort_columns.append('ENDTIME')
+            events.ENDTIME = pd.to_datetime(events.ENDTIME)
+        if 'ENDDATE' in events:
+            sort_columns.append('ENDDATE')
+            events.ENDDATE = pd.to_datetime(events.ENDDATE)
 
         if 'ITEMID' in events:
             sort_columns.append('ITEMID')
+
         events.HADM_ID = events.HADM_ID.fillna(value=-1).astype(int)
         if 'ICUSTAY_ID' in events:
             try:
@@ -108,10 +115,15 @@ def add_hours_elpased_to_events(events, dt, remove_charttime=True):
 
 
 def include_hours_elapsed_to_events(events, dt, remove_charttime=True):
-    if 'CHARTTIME' in events and 'CHARTDATE' in events:
-        event_times = events.CHARTTIME.fillna(events.CHARTDATE)
-    else:
-        event_times = events[events.columns & ['CHARTTIME', 'STARTTIME', 'STARTDATE']].ix[:,0]
+    event_times = events[events.columns & ['CHARTTIME', 'STARTTIME', 'STARTDATE']]
+    if 'CHARTDATE' in events.columns:
+        event_times.fillna(events.CHARTDATE)
+    event_times = event_times.ix[:,0]
+
+    if set(events.columns) & {'ENDTIME', 'ENDDATE'}:
+        event_finish_times = events[events.columns & ['ENDTIME', 'ENDDATE']].ix[:,0]
+        events['ENDHOURS'] = (event_finish_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
+
     events['HOURS'] = (event_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
     return events
 

@@ -21,6 +21,7 @@ def process_partition(args, partition, sample_rate=1.0, shortest_length=4.0, eps
         patient_ts_files = list(filter(lambda x: x.find("timeseries") != -1, os.listdir(patient_folder)))
 
         for ts_filename in patient_ts_files:
+            # TODO not updated
             with open(os.path.join(patient_folder, ts_filename)) as tsfile:
                 lb_filename = ts_filename.replace("_timeseries", "")
                 label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))

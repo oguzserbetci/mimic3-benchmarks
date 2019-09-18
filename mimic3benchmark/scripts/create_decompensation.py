@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os
+import re
 import argparse
 import numpy as np
 import pandas as pd
@@ -25,64 +26,61 @@ def process_partition(args, partition, sample_rate=1.0, shortest_length=4.0,
         stays_df = pd.read_csv(os.path.join(patient_folder, "stays.csv"))
 
         for ts_filename in patient_ts_files:
-            with open(os.path.join(patient_folder, ts_filename)) as tsfile:
-                lb_filename = ts_filename.replace("_timeseries", "")
+            if "_all.csv" in ts_filename:
+                continue
+
+            lb_filename = re.sub(r"_timeseries[a-z_]*", "", ts_filename)
+            try:
                 label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))
+            except:
+                print("Label file EMPTY.")
+                continue
 
-                # empty label file
-                if label_df.shape[0] == 0:
-                    continue
+            # empty label file
+            if label_df.shape[0] == 0:
+                break
 
-                mortality = int(label_df.iloc[0]["Mortality"])
+            mortality = int(label_df.iloc[0]["Mortality"])
 
-                los = 24.0 * label_df.iloc[0]['Length of Stay']  # in hours
-                if pd.isnull(los):
-                    print("(length of stay is missing)", patient, ts_filename)
-                    continue
+            los = 24.0 * label_df.iloc[0]['Length of Stay']  # in hours
+            if pd.isnull(los):
+                print("(length of stay is missing)", patient, ts_filename)
+                continue
 
-                stay = stays_df[stays_df.ICUSTAY_ID == label_df.iloc[0]['Icustay']]
-                deathtime = stay['DEATHTIME'].iloc[0]
-                intime = stay['INTIME'].iloc[0]
-                if pd.isnull(deathtime):
-                    lived_time = 1e18
+            stay = stays_df[stays_df.ICUSTAY_ID == label_df.iloc[0]['Icustay']]
+            deathtime = stay['DEATHTIME'].iloc[0]
+            intime = stay['INTIME'].iloc[0]
+            if pd.isnull(deathtime):
+                lived_time = 1e18
+            else:
+                lived_time = (datetime.strptime(deathtime, "%Y-%m-%d %H:%M:%S") -
+                                datetime.strptime(intime, "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600.0
+
+            df = pd.read_csv(os.path.join(patient_folder, ts_filename))
+            header = df.columns
+            ts_lines = df[(-eps < df["Hours"]) & (df["Hours"] < los + eps)]
+            event_times = ts_lines.Hours
+
+            if len(ts_lines) == 0:
+                print("(no events in ICU) ", patient, ts_filename)
+                continue
+
+            sample_times = np.arange(0.0, min(los, lived_time) + eps, sample_rate)
+
+            sample_times = list(filter(lambda x: x > shortest_length, sample_times))
+
+            # At least one measurement
+            sample_times = list(filter(lambda x: x > event_times.iloc[0], sample_times))
+
+            output_ts_filename = patient + "_" + ts_filename
+            ts_lines.to_csv(os.path.join(output_dir, output_ts_filename), index=False)
+
+            for t in sample_times:
+                if mortality == 0:
+                    cur_mortality = 0
                 else:
-                    lived_time = (datetime.strptime(deathtime, "%Y-%m-%d %H:%M:%S") -
-                                  datetime.strptime(intime, "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600.0
-
-                ts_lines = tsfile.readlines()
-                header = ts_lines[0]
-                ts_lines = ts_lines[1:]
-                event_times = [float(line.split(',')[0]) for line in ts_lines]
-
-                ts_lines = [line for (line, t) in zip(ts_lines, event_times)
-                            if -eps < t < los + eps]
-                event_times = [t for t in event_times
-                               if -eps < t < los + eps]
-
-                # no measurements in ICU
-                if len(ts_lines) == 0:
-                    print("(no events in ICU) ", patient, ts_filename)
-                    continue
-
-                sample_times = np.arange(0.0, min(los, lived_time) + eps, sample_rate)
-
-                sample_times = list(filter(lambda x: x > shortest_length, sample_times))
-
-                # At least one measurement
-                sample_times = list(filter(lambda x: x > event_times[0], sample_times))
-
-                output_ts_filename = patient + "_" + ts_filename
-                with open(os.path.join(output_dir, output_ts_filename), "w") as outfile:
-                    outfile.write(header)
-                    for line in ts_lines:
-                        outfile.write(line)
-
-                for t in sample_times:
-                    if mortality == 0:
-                        cur_mortality = 0
-                    else:
-                        cur_mortality = int(lived_time - t < future_time_interval)
-                    xty_triples.append((output_ts_filename, t, cur_mortality))
+                    cur_mortality = int(lived_time - t < future_time_interval)
+                xty_triples.append((output_ts_filename, t, cur_mortality))
 
         if (patient_index + 1) % 100 == 0:
             print("processed {} / {} patients".format(patient_index + 1, len(patients)), end='\r')
