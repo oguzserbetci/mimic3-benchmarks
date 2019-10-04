@@ -91,7 +91,6 @@ def get_events_for_stay(events, icustayid, intime=None, outtime=None):
         idx = (events.ICUSTAY_ID == icustayid)
     elif time_column in events:
         assert intime is not None and outtime is not None
-        idx = ((events[time_column] >= intime) & (events[time_column] <= outtime))
     else:
         raise ValueError
 
