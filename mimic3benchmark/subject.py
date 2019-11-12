@@ -43,7 +43,7 @@ def read_events_tables(subject_path, remove_null=True):
             print(subject_path, 'doesn\'t have', table)
             continue
         if remove_null:
-            events = events.dropna()
+            events = events.dropna(subset=['VALUE'])
 
         sort_columns = []
         if 'CHARTTIME' in events:
