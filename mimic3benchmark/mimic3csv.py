@@ -170,6 +170,7 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
     obs_header = {'SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM',
                   'ICD9_CODE', 'SEQ_NUM',
                   'STARTTIME', 'ENDTIME', 'STARTDATE', 'ENDDATE',
+                  'AMOUNT', 'AMOUNTUOM',
                   'RATE', 'RATEUOM', 'ORDERCATEGORYNAME', 'SECONDARYCATEGORYNAME', 'PATIENTWEIGHT', 'CANCELREASON',
                   'CHARTDATE', 'CATEGORY', 'DESCRIPTION', 'TEXT',
                   'DRUG_TYPE', 'DRUG', 'DRUG_NAME_POE', 'DRUG_NAME_GENERIC', 'FORMULARY_DRUG_CD', 'GSN', 'NDC', 'PROD_STRENGTH', 'DOSE_VAL_RX', 'DOSE_UNIT_RX',

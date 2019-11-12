@@ -74,28 +74,29 @@ for subject_dir in os.listdir(args.subjects_root_path):
     sys.stdout.write(f'extracting separate episodes... in {subject_dir}')
     sys.stdout.flush()
 
-    for i in range(stays.shape[0]):
-        stay_id = stays.ICUSTAY_ID.iloc[i]
-        sys.stdout.write(' {}'.format(stay_id))
-        sys.stdout.flush()
-        intime = stays.INTIME.iloc[i]
-        outtime = stays.OUTTIME.iloc[i]
+    for table, all_events in all_events_tables:
+        all_events = sort_events(all_events, variables=variables)
+        for i in range(stays.shape[0]):
+            stay_id = stays.ICUSTAY_ID.iloc[i]
+            sys.stdout.write(' {}'.format(stay_id))
+            sys.stdout.flush()
+            intime = stays.INTIME.iloc[i]
+            outtime = stays.OUTTIME.iloc[i]
 
-        for table, all_events in all_events_tables:
-            all_events = sort_events(all_events, variables=variables)
-            all_events = get_events_for_stay(all_events, stay_id, intime, outtime)
+            stay_events = get_events_for_stay(all_events, stay_id, intime, outtime)
 
             if table in d_tables:
-                id_columns = [col for col in all_events.columns if col in {'ITEMID', 'ICD9_CODE'}]
+                id_columns = [col for col in stay_events.columns if col in {'ITEMID', 'ICD9_CODE'}]
                 d_table = d_tables[table]
                 label_columns = [col for col in d_table.columns if col in {'SHORT_TITLE','LONG_TITLE','LABEL','CATEGORY'}]
-                all_events = pd.merge(all_events, d_table[id_columns + label_columns], on=id_columns, how='inner')
-            all_events = include_hours_elapsed_to_events(all_events, intime).set_index('HOURS').sort_index(axis=0)
+                stay_events = pd.merge(stay_events, d_table[id_columns + label_columns], on=id_columns, how='inner')
+            stay_events = include_hours_elapsed_to_events(stay_events, intime).set_index('HOURS').sort_index(axis=0)
 
-            columns = list(all_events.columns)
-            columns_sorted = sorted(all_events, key=(lambda x: "" if x == "Hours" else x))
-            all_events = all_events[columns_sorted]
+            columns = list(stay_events.columns)
+            columns_sorted = sorted(stay_events, key=(lambda x: "" if x == "Hours" else x))
+            stay_events = stay_events[columns_sorted]
 
-            all_events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_{}.csv'.format(i+1, table)), index_label='Hours')
+            if len(stay_events) > 0:
+                stay_events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_{}.csv'.format(i+1, table)), index_label='Hours')
 
     sys.stdout.write(' DONE!\n')

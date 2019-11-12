@@ -43,7 +43,6 @@ def process_partition(args, partition, eps=1e-6, n_hours=48):
             if los < n_hours - eps:
                 continue
 
-
             df = pd.read_csv(os.path.join(patient_folder, ts_filename))
             header = df.columns
             ts_lines = df[(-eps < df["Hours"]) & (df["Hours"] < n_hours + eps)]
