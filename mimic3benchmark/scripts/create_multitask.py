@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+import re
 import os
 import argparse
 import numpy as np
@@ -44,8 +45,11 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
         for ts_filename in patient_ts_files:
             # TODO not updated
             with open(os.path.join(patient_folder, ts_filename)) as ts_file:
-                lb_filename = ts_filename.replace("_timeseries", "")
-                label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))
+                lb_filename = re.sub(r"_timeseries[a-z_]*", "", ts_filename)
+                try:
+                    label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))
+                except:
+                    continue
 
                 # empty label file, skip globally
                 if label_df.shape[0] == 0:
@@ -59,14 +63,10 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
                     continue
 
                 # find all event in ICU, skip globally if there is no event in ICU
-                ts_lines = ts_file.readlines()
-                header = ts_lines[0]
-                ts_lines = ts_lines[1:]
-                event_times = [float(line.split(',')[0]) for line in ts_lines]
-                ts_lines = [line for (line, t) in zip(ts_lines, event_times)
-                            if -eps < t < los + eps]
-                event_times = [t for t in event_times
-                               if -eps < t < los + eps]
+                df = pd.read_csv(os.path.join(patient_folder, ts_filename))
+                header = df.columns
+                ts_lines = df[(-eps < df["Hours"]) & (df["Hours"] < los + eps)]
+                event_times = ts_lines.Hours
 
                 if len(ts_lines) == 0:
                     print("\n\t(no events in ICU) ", patient, ts_filename)
@@ -80,10 +80,8 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
 
                 # write episode data and add file name
                 output_ts_filename = patient + "_" + ts_filename
-                with open(os.path.join(output_dir, output_ts_filename), "w") as outfile:
-                    outfile.write(header)
-                    for line in ts_lines:
-                        outfile.write(line)
+                ts_lines.to_csv(os.path.join(output_dir, output_ts_filename), index=False)
+
                 file_names.append(output_ts_filename)
 
                 # create in-hospital mortality
@@ -92,7 +90,7 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
                 ihm_mask = 1
                 if los < fixed_hours - eps:
                     ihm_mask = 0
-                if event_times[0] > fixed_hours + eps:
+                if event_times.iloc[0] > fixed_hours + eps:
                     ihm_mask = 0
 
                 ihm_position = 47
@@ -106,7 +104,7 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
                 # create length of stay
                 sample_times = np.arange(0.0, los + eps, sample_rate)
                 sample_times = np.array([int(x+eps) for x in sample_times])
-                cur_los_masks = map(int, (sample_times > shortest_length) & (sample_times > event_times[0]))
+                cur_los_masks = map(int, (sample_times > shortest_length) & (sample_times > event_times.iloc[0]))
                 cur_los_labels = los - sample_times
 
                 los_masks.append(cur_los_masks)
@@ -141,7 +139,7 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
 
                 sample_times = np.arange(0.0, min(los, lived_time) + eps, sample_rate)
                 sample_times = np.array([int(x+eps) for x in sample_times])
-                cur_decomp_masks = map(int, (sample_times > shortest_length) & (sample_times > event_times[0]))
+                cur_decomp_masks = map(int, (sample_times > shortest_length) & (sample_times > event_times.iloc[0]))
                 cur_decomp_labels = [(mortality & int(lived_time - t < future_time_interval))
                                      for t in sample_times]
                 decomp_masks.append(cur_decomp_masks)
