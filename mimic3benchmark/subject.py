@@ -35,15 +35,13 @@ def read_events(subject_path, remove_null=True):
     return events
 
 
-def read_events_tables(subject_path, remove_null=True):
+def read_events_tables(subject_path):
     for table in ['chartevents', 'labevents', 'datetimeevents', 'outputevents', 'noteevents', 'inputevents_cv', 'inputevents_mv', 'procedureevents_mv', 'prescriptions']:
         try:
             events = dataframe_from_csv(os.path.join(subject_path, table + '.csv'), index_col=None)
         except:
             print(subject_path, 'doesn\'t have', table)
             continue
-        if remove_null:
-            events = events.dropna(subset=['VALUE'])
 
         sort_columns = []
         if 'CHARTTIME' in events:
