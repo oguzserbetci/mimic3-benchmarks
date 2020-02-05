@@ -12,6 +12,28 @@ import random
 random.seed(49297)
 
 
+dtypes = {
+    "Capillary refill rate": str,
+    "Diastolic blood pressure": str,
+    "Fraction inspired oxygen": str,
+    "Glascow coma scale eye opening": str,
+    "Glascow coma scale motor response": str,
+    "Glascow coma scale total": str,
+    "Glascow coma scale verbal response": str,
+    "Glucose": str,
+    "Heart Rate": str,
+    "Height": str,
+    "Mean blood pressure": str,
+    "Oxygen saturation": str,
+    "Respiratory rate": str,
+    "Systolic blood pressure": str,
+    "Temperature": str,
+    "Weight": str,
+    "pH": str,
+    "Hours": "float64"
+}
+
+
 def process_partition(args, definitions, code_to_group, id_to_group, group_to_id,
                       partition, sample_rate=1.0, shortest_length=4,
                       eps=1e-6, future_time_interval=24.0, fixed_hours=48.0):
@@ -63,7 +85,7 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
                     continue
 
                 # find all event in ICU, skip globally if there is no event in ICU
-                df = pd.read_csv(os.path.join(patient_folder, ts_filename))
+                df = pd.read_csv(os.path.join(patient_folder, ts_filename), dtype=dtypes)
                 header = df.columns
                 ts_lines = df[(-eps < df["Hours"]) & (df["Hours"] < los + eps)]
                 event_times = ts_lines.Hours
@@ -179,6 +201,9 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
         listfile.write(header + "\n")
 
         for index in range(len(file_names)):
+            if 'timeseries.csv' not in file_names[index]:
+                continue
+
             file_name = file_names[index]
             los = '{:.6f}'.format(loses[index])
 

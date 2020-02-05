@@ -39,8 +39,6 @@ d_tables = {
     'procedures_icd': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES.csv')
 }
 
-var_map = read_itemid_to_variable_map(args.variable_map_file)
-variables = var_map.VARIABLE.unique()
 
 for subject_dir in os.listdir(args.subjects_root_path):
     dn = os.path.join(args.subjects_root_path, subject_dir)
@@ -75,7 +73,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
     sys.stdout.flush()
 
     for table, all_events in all_events_tables:
-        all_events = sort_events(all_events, variables=variables)
+        all_events = sort_events(all_events)
         for i in range(stays.shape[0]):
             stay_id = stays.ICUSTAY_ID.iloc[i]
             sys.stdout.write(' {}'.format(stay_id))
