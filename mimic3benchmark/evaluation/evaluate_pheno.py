@@ -30,7 +30,7 @@ def main():
     assert (df['pred_1'].isnull().sum() == 0)
     assert (df['period_length_l'].equals(df['period_length_r']))
     for i in range(1, n_tasks + 1):
-        assert (df['label_{}_l'.format(i)].equals(df['label_{}_r'.format(i)]))
+        assert (df['label_{}_l'.format(i)] == df['label_{}_r'.format(i)]).all()
 
     metrics = [('Macro ROC AUC', 'ave_auc_macro'),
                ('Micro ROC AUC', 'ave_auc_micro'),

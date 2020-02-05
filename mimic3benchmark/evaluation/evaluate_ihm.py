@@ -25,7 +25,7 @@ def main():
 
     df = test_df.merge(pred_df, left_on='stay', right_on='stay', how='left', suffixes=['_l', '_r'])
     assert (df['prediction'].isnull().sum() == 0)
-    assert (df['y_true_l'].equals(df['y_true_r']))
+    assert (df['y_true_l'] == df['y_true_r']).all()
 
     metrics = [('AUC of ROC', 'auroc'),
                ('AUC of PRC', 'auprc'),

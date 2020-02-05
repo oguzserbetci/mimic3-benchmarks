@@ -27,7 +27,7 @@ def main():
     df = test_df.merge(pred_df, left_on=['stay', 'period_length'], right_on=['stay', 'period_length'],
                        how='left', suffixes=['_l', '_r'])
     assert (df['prediction'].isnull().sum() == 0)
-    assert (df['y_true_l'].equals(df['y_true_r']))
+    assert (df['y_true_l'] == df['y_true_r']).all()
 
     metrics = [('Kappa', 'kappa'),
                ('MAD', 'mad'),
