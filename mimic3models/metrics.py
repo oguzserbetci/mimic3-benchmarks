@@ -62,16 +62,24 @@ def print_metrics_multilabel(y_true, predictions, verbose=1):
                                           average="macro")
     ave_auc_weighted = metrics.roc_auc_score(y_true, predictions,
                                              average="weighted")
+    ave_ap_micro = metrics.average_precision_score(y_true, predictions,
+                                          average="micro")
+    ave_ap_macro = metrics.average_precision_score(y_true, predictions,
+                                          average="macro")
 
     if verbose:
         print("ROC AUC scores for labels:", auc_scores)
         print("ave_auc_micro = {}".format(ave_auc_micro))
         print("ave_auc_macro = {}".format(ave_auc_macro))
+        print("ave_ap_macro = {}".format(ave_ap_macro))
+        print("ave_ap_macro = {}".format(ave_ap_macro))
         print("ave_auc_weighted = {}".format(ave_auc_weighted))
 
     return {"auc_scores": auc_scores,
             "ave_auc_micro": ave_auc_micro,
             "ave_auc_macro": ave_auc_macro,
+            "ave_ap_micro": ave_ap_micro,
+            "ave_ap_macro": ave_ap_macro,
             "ave_auc_weighted": ave_auc_weighted}
 
 
