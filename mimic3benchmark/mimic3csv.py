@@ -56,6 +56,9 @@ def read_events_table_by_row(mimic3_path, table):
                'PRESCRIPTIONS': 4156451,
                'PROCEDURES_ICD': 240096,
                'PROCEDUREEVENTS_MV': 258066,
+               'CPTEVENTS': 573147,
+               'MICROBIOLOGYEVENTS': 631727,
+               # 'TRANSFERS': None, Cohort excludes transfered patiens
                'SERVICES': 73344}
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
@@ -170,11 +173,13 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
     obs_header = {'SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM',
                   'ICD9_CODE', 'SEQ_NUM',
                   'STARTTIME', 'ENDTIME', 'STARTDATE', 'ENDDATE',
-                  'AMOUNT', 'AMOUNTUOM',
-                  'RATE', 'RATEUOM', 'ORDERCATEGORYNAME', 'SECONDARYCATEGORYNAME', 'PATIENTWEIGHT', 'CANCELREASON',
-                  'CHARTDATE', 'CATEGORY', 'DESCRIPTION', 'TEXT',
-                  'DRUG_TYPE', 'DRUG', 'DRUG_NAME_POE', 'DRUG_NAME_GENERIC', 'FORMULARY_DRUG_CD', 'GSN', 'NDC', 'PROD_STRENGTH', 'DOSE_VAL_RX', 'DOSE_UNIT_RX',
-                  'PREV_SERVICE', 'CURR_SERVICE'}
+                  'AMOUNT', 'AMOUNTUOM', 'RATE', 'RATEUOM', 'ORDERCATEGORYNAME', 'SECONDARYCATEGORYNAME', 'PATIENTWEIGHT', 'CANCELREASON', # INPUTEVENTS
+                  'CHARTDATE', 'CATEGORY', 'DESCRIPTION', 'TEXT', # NOTES
+                  'DRUG_TYPE', 'DRUG', 'DRUG_NAME_POE', 'DRUG_NAME_GENERIC', 'FORMULARY_DRUG_CD', 'GSN', 'NDC', 'PROD_STRENGTH', 'DOSE_VAL_RX', 'DOSE_UNIT_RX', # PRESCRIPTIONS
+                  'SPEC_ITEMID', 'SPEC_TYPE_DESC', 'ORG_ITEMID', 'ORG_NAME', 'AB_ITEMID', 'AB_NAME', 'DILUTION_TEXT', 'DILUTION_COMPARISON', 'DILUTION_VALUE', 'INTERPRETATION', # MICROBIOLOGY
+                  'TRANSFERTIME', 'PREV_SERVICE', 'CURR_SERVICE' # SERVICE
+                  'CPT_CD', 'CPT_NUMBER', 'CPT_SUFFIX',  'DESCRIPTION' # CPT
+    }
     file_header = read_events_table_header(mimic3_path, table)
     obs_header = [col for col in file_header if col in obs_header]
     events_header = ['SUBJECT_ID', 'HADM_ID', 'ICUSTAY_ID', 'CHARTTIME', 'ITEMID', 'VALUE', 'VALUEUOM']

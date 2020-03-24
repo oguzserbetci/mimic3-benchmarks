@@ -83,7 +83,7 @@ def read_events_tables(subject_path, table_list):
 
 
 def get_events_with_icuid_for_stay(events, icustayid, intime=None, outtime=None):
-    time_column = list({'CHARTTIME', 'STARTDATE', 'STARTTIME'} & set(events.columns))[0]
+    time_column = list({'CHARTTIME', 'STARTDATE', 'STARTTIME', 'TRANSFERTIME'} & set(events.columns))[0]
     idx = (events.ICUSTAY_ID == icustayid)
     if intime is not None and outtime is not None:
         idx = idx | ((events[time_column] >= intime) & (events[time_column] <= outtime))
@@ -108,7 +108,7 @@ def add_hours_elpased_to_events(events, dt, remove_charttime=True):
 
 
 def add_start_end_hours_elapsed_to_events(events, dt, remove_charttime=True):
-    event_times = events[events.columns & ['CHARTTIME', 'STARTTIME', 'STARTDATE']]
+    event_times = events[events.columns & ['CHARTTIME', 'STARTTIME', 'STARTDATE', 'TRANSFERTIME']]
     # CHARTDATE exists as a backup in NOTEEVENTS, we use it to fill up CHARTTIME
     if 'CHARTDATE' in events.columns:
         # Add 24 hours to CHARTDATE to make sure no information leakage
