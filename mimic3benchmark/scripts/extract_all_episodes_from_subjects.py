@@ -8,7 +8,7 @@ import os
 import sys
 
 from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, read_events_tables, get_events_with_icuid_for_stay, add_start_end_hours_elapsed_to_events
-from mimic3benchmark.subject import convert_events_to_timeseries, sort_events, get_first_valid_from_timeseries
+from mimic3benchmark.subject import convert_events_to_timeseries, get_first_valid_from_timeseries
 from mimic3benchmark.preprocessing import read_itemid_to_variable_map, map_itemids_to_variables, read_variable_ranges, clean_events
 from mimic3benchmark.preprocessing import transform_gender, transform_ethnicity, assemble_episodic_data
 
@@ -18,6 +18,8 @@ parser.add_argument('subjects_root_path', type=str, help='Directory containing s
 parser.add_argument('--variable_map_file', type=str,
                     default=os.path.join(os.path.dirname(__file__), '../resources/itemid_to_variable_map.csv'),
                     help='CSV containing ITEMID-to-VARIABLE map.')
+parser.add_argument('--event_tables', '-e', type=str, nargs='+', help='Tables from which to read events.',
+                    default=['chartevents', 'labevents', 'datetimeevents', 'outputevents', 'prescriptions', 'noteevents', 'diagnoses_icd', 'procedureevents_mv', 'procedures_icd', 'services', 'inputevents_cv', 'inputevents_mv'])
 parser.add_argument('--mimic', type=str, default='~/MIMIC-III')
 parser.add_argument('--reference_range_file', type=str,
                     default=os.path.join(os.path.dirname(__file__), '../resources/variable_ranges.csv'),
@@ -56,7 +58,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
         sys.stdout.flush()
         stays = read_stays(os.path.join(args.subjects_root_path, subject_dir))
         diagnoses = read_diagnoses(os.path.join(args.subjects_root_path, subject_dir))
-        all_events_tables = read_events_tables(os.path.join(args.subjects_root_path, subject_dir))
+        all_events_tables = read_events_tables(os.path.join(args.subjects_root_path, subject_dir), args.event_tables)
     except Exception as e:
         sys.stdout.write(f'error reading from disk!: {e}\n')
         continue
@@ -73,7 +75,6 @@ for subject_dir in os.listdir(args.subjects_root_path):
     sys.stdout.flush()
 
     for table, all_events in all_events_tables:
-        all_events = sort_events(all_events)
         for i in range(stays.shape[0]):
             stay_id = stays.ICUSTAY_ID.iloc[i]
             sys.stdout.write(' {}'.format(stay_id))
@@ -91,7 +92,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
             stay_events = add_start_end_hours_elapsed_to_events(stay_events, intime).set_index('HOURS').sort_index(axis=0)
 
             columns = list(stay_events.columns)
-            columns_sorted = sorted(stay_events, key=(lambda x: "" if x == "Hours" else x))
+            columns_sorted = sorted(columns_sorted, key=(lambda x: "" if x == "Hours" else x))
             stay_events = stay_events[columns_sorted]
 
             if len(stay_events) > 0:

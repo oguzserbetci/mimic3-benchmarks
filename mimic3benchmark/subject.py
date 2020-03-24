@@ -34,8 +34,8 @@ def read_events(subject_path, remove_null=True):
     return events
 
 
-def read_events_tables(subject_path):
-    for table in ['chartevents', 'labevents', 'datetimeevents', 'outputevents', 'noteevents', 'inputevents_cv', 'inputevents_mv', 'procedureevents_mv', 'prescriptions']:
+def read_events_tables(subject_path, table_list):
+    for table in table_list:
         try:
             events = dataframe_from_csv(os.path.join(subject_path, table + '.csv'), index_col=None)
         except:
@@ -140,12 +140,6 @@ def convert_events_to_timeseries(events, variable_column='VARIABLE', variables=[
     for v in variables:
         if v not in timeseries:
             timeseries[v] = np.nan
-    return timeseries
-
-
-def sort_events(events, variable_column='ITEMID', variables=[]):
-    time_column = list({'CHARTTIME', 'CHARTDATE', 'STARTDATE', 'STARTTIME'} & set(events.columns))
-    timeseries = events.sort_values(by=time_column, axis=0)
     return timeseries
 
 
