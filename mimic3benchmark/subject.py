@@ -112,14 +112,22 @@ def add_hours_elpased_to_events(events, dt, remove_charttime=True):
     return events
 
 
-def include_hours_elapsed_to_events(events, dt, remove_charttime=True):
+def add_start_end_hours_elapsed_to_events(events, dt, remove_charttime=True):
     event_times = events[events.columns & ['CHARTTIME', 'STARTTIME', 'STARTDATE']]
+    # CHARTDATE exists as a backup in NOTEEVENTS, we use it to fill up CHARTTIME
     if 'CHARTDATE' in events.columns:
-        event_times.fillna(events.CHARTDATE)
+        # Add 24 hours to CHARTDATE to make sure no information leakage
+        event_times.fillna(events.CHARTDATE + np.timedelta64(1, 'D'))
+    # Add 24 hours to STARTDATE to make sure no information leakage
+    if event_times in ['STARTDATE']:
+        event_times += np.timedelta64(1, 'D')
     event_times = event_times.ix[:,0]
 
     if set(events.columns) & {'ENDTIME', 'ENDDATE'}:
         event_finish_times = events[events.columns & ['ENDTIME', 'ENDDATE']].ix[:,0]
+        # Add 24 hours to ENDDATE to make sure no information leakage
+        if 'ENDDATE' in events.columns:
+            event_finish_times += np.timedelta(1, 'D')
         events['ENDHOURS'] = (event_finish_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
 
     events['HOURS'] = (event_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60

@@ -7,7 +7,7 @@ import argparse
 import os
 import sys
 
-from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, read_events_tables, get_events_for_stay, add_hours_elpased_to_events, include_hours_elapsed_to_events
+from mimic3benchmark.subject import read_stays, read_diagnoses, read_events, read_events_tables, get_events_for_stay, add_start_end_hours_elapsed_to_events
 from mimic3benchmark.subject import convert_events_to_timeseries, sort_events, get_first_valid_from_timeseries
 from mimic3benchmark.preprocessing import read_itemid_to_variable_map, map_itemids_to_variables, read_variable_ranges, clean_events
 from mimic3benchmark.preprocessing import transform_gender, transform_ethnicity, assemble_episodic_data
@@ -88,7 +88,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
                 d_table = d_tables[table]
                 label_columns = [col for col in d_table.columns if col in {'SHORT_TITLE','LONG_TITLE','LABEL','CATEGORY'}]
                 stay_events = pd.merge(stay_events, d_table[id_columns + label_columns], on=id_columns, how='inner')
-            stay_events = include_hours_elapsed_to_events(stay_events, intime).set_index('HOURS').sort_index(axis=0)
+            stay_events = add_start_end_hours_elapsed_to_events(stay_events, intime).set_index('HOURS').sort_index(axis=0)
 
             columns = list(stay_events.columns)
             columns_sorted = sorted(stay_events, key=(lambda x: "" if x == "Hours" else x))
