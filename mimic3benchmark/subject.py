@@ -31,7 +31,6 @@ def read_events(subject_path, remove_null=True):
     events.HADM_ID = events.HADM_ID.fillna(value=-1).astype(int)
     events.ICUSTAY_ID = events.ICUSTAY_ID.fillna(value=-1).astype(int)
     events.VALUEUOM = events.VALUEUOM.fillna('').astype(str)
-    events.sort_values(by=['CHARTTIME', 'ITEMID', 'ICUSTAY_ID'], inplace=True)
     return events
 
 
@@ -83,25 +82,21 @@ def read_events_tables(subject_path):
         yield table, events
 
 
-def get_events_for_stay(events, icustayid, intime=None, outtime=None):
+def get_events_with_icuid_for_stay(events, icustayid, intime=None, outtime=None):
     time_column = list({'CHARTTIME', 'STARTDATE', 'STARTTIME'} & set(events.columns))[0]
-    if 'ICUSTAY_ID' in events:
-        idx = (events.ICUSTAY_ID == icustayid)
-    elif time_column in events:
-        assert intime is not None and outtime is not None
-        idx = ((events[time_column] >= intime) & (events[time_column] <= outtime))
-    else:
-        raise ValueError
-
+    idx = (events.ICUSTAY_ID == icustayid)
     if intime is not None and outtime is not None:
-        if time_column in events:
-            idx = idx | ((events[time_column] >= intime) & (events[time_column] <= outtime))
-        else:
-            raise ValueError
-
+        idx = idx | ((events[time_column] >= intime) & (events[time_column] <= outtime))
     events = events.ix[idx]
-    if 'ICUSTAY_ID' in events:
-        del events['ICUSTAY_ID']
+    return events
+
+
+def get_events_for_stay(events, icustayid, intime=None, outtime=None):
+    idx = (events.ICUSTAY_ID == icustayid)
+    if intime is not None and outtime is not None:
+        idx = idx | ((events.CHARTTIME >= intime) & (events.CHARTTIME <= outtime))
+    events = events.ix[idx]
+    del events['ICUSTAY_ID']
     return events
 
 
@@ -149,7 +144,7 @@ def convert_events_to_timeseries(events, variable_column='VARIABLE', variables=[
 
 
 def sort_events(events, variable_column='ITEMID', variables=[]):
-    time_column = list({'CHARTTIME', 'STARTDATE', 'STARTTIME'} & set(events.columns))
+    time_column = list({'CHARTTIME', 'CHARTDATE', 'STARTDATE', 'STARTTIME'} & set(events.columns))
     timeseries = events.sort_values(by=time_column, axis=0)
     return timeseries
 

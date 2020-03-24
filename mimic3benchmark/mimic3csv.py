@@ -59,8 +59,8 @@ def read_events_table_by_row(mimic3_path, table):
                'services': 73344}
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
-        # if 'ICUSTAY_ID' not in row:
-        #     row['ICUSTAY_ID'] = ''
+        if 'ICUSTAY_ID' not in row:
+            row['ICUSTAY_ID'] = ''
         yield row, i, nb_rows[table.lower()]
 
 
