@@ -19,7 +19,7 @@ parser.add_argument('--variable_map_file', type=str,
                     default=os.path.join(os.path.dirname(__file__), '../resources/itemid_to_variable_map.csv'),
                     help='CSV containing ITEMID-to-VARIABLE map.')
 parser.add_argument('--event_tables', '-e', type=str, nargs='+', help='Tables from which to read events.',
-                    default=['chartevents', 'labevents', 'datetimeevents', 'outputevents', 'prescriptions', 'noteevents', 'diagnoses_icd', 'procedureevents_mv', 'procedures_icd', 'services', 'inputevents_cv', 'inputevents_mv'])
+                    default=['CHARTEVENTS', 'LABEVENTS', 'DATETIMEEVENTS', 'OUTPUTEVENTS', 'PRESCRIPTIONS', 'NOTEEVENTS', 'DIAGNOSES_ICD', 'PROCEDUREEVENTS_MV', 'PROCEDURES_ICD', 'SERVICES', 'INPUTEVENTS_CV', 'INPUTEVENTS_MV'])
 parser.add_argument('--mimic', type=str, default='~/MIMIC-III')
 parser.add_argument('--reference_range_file', type=str,
                     default=os.path.join(os.path.dirname(__file__), '../resources/variable_ranges.csv'),

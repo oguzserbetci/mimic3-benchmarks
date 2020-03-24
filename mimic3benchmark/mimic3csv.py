@@ -44,24 +44,24 @@ def read_icd_diagnoses_table(mimic3_path):
 
 
 def read_events_table_by_row(mimic3_path, table):
-    nb_rows = {'chartevents': 330712484,
-               'labevents': 27854056,
-               'outputevents': 4349219,
-               'datetimeevents': 4485937,
-               'diagnoses_icd': 651048,
-               'inputevents_cv': 17527936,
-               'inputevents_mv': 3618992,
-               'noteevents': 91691299,
-               'outputevents': 4349219,
-               'prescriptions': 4156451,
-               'procedures_icd': 240096,
-               'procedureevents_mv': 258066,
-               'services': 73344}
+    nb_rows = {'CHARTEVENTS': 330712484,
+               'LABEVENTS': 27854056,
+               'OUTPUTEVENTS': 4349219,
+               'DATETIMEEVENTS': 4485937,
+               'DIAGNOSES_ICD': 651048,
+               'INPUTEVENTS_CV': 17527936,
+               'INPUTEVENTS_MV': 3618992,
+               'NOTEEVENTS': 91691299,
+               'OUTPUTEVENTS': 4349219,
+               'PRESCRIPTIONS': 4156451,
+               'PROCEDURES_ICD': 240096,
+               'PROCEDUREEVENTS_MV': 258066,
+               'SERVICES': 73344}
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
         if 'ICUSTAY_ID' not in row:
             row['ICUSTAY_ID'] = ''
-        yield row, i, nb_rows[table.lower()]
+        yield row, i, nb_rows[table]
 
 
 def read_events_table_header(mimic3_path, table):
@@ -204,7 +204,7 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
         except:
             pass
 
-        tn = os.path.join(dn, table.lower() + '.csv')
+        tn = os.path.join(dn, table + '.csv')
         if not os.path.isfile(tn):
             with open(tn, 'w') as f:
                 f.write(','.join(obs_header) + '\n')
