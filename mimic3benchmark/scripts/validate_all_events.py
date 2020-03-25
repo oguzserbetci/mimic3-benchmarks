@@ -24,6 +24,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('subjects_root_path', type=Path,
                         help='Directory containing subject subdirectories.')
+    parser.add_argument('--event_tables', '-e', type=str, nargs='+', help='Tables from which to read events.',
+                        default=['CHARTEVENTS', 'LABEVENTS', 'DATETIMEEVENTS', 'OUTPUTEVENTS', 'PRESCRIPTIONS', 'NOTEEVENTS', 'DIAGNOSES_ICD', 'PROCEDUREEVENTS_MV', 'PROCEDURES_ICD', 'SERVICES', 'INPUTEVENTS_CV', 'INPUTEVENTS_MV'])
     args = parser.parse_args()
     print(args)
 
@@ -47,7 +49,7 @@ def main():
         assert(len(stays_df['ICUSTAY_ID'].unique()) == len(stays_df['ICUSTAY_ID']))
         assert(len(stays_df['HADM_ID'].unique()) == len(stays_df['HADM_ID']))
 
-        for event_type in ['chartevents', 'labevents', 'datetimeevents', 'outputevents', 'noteevents', 'inputevents_cv', 'inputevents_mv', 'procedureevents_mv', 'prescriptions']:
+        for event_type in args.event_tables:
             events_file = event_type + '.csv'
             if not os.path.exists(args.subjects_root_path / subject / events_file):
                 continue

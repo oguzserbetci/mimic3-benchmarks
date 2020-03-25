@@ -87,6 +87,8 @@ Here are the required steps to build the benchmark. It assumes that you already 
 
        python -m mimic3benchmark.scripts.validate_events data/root/
 
+       python -m mimic3benchmark.scripts.validate_all_events data/root/
+
 4. The next command breaks up per-subject data into separate episodes (pertaining to ICU stays). Time series of events are stored in ```{SUBJECT_ID}/episode{#}_timeseries.csv``` (where # counts distinct episodes) while episode-level information (patient age, gender, ethnicity, height, weight) and outcomes (mortality, length of stay, diagnoses) are stores in ```{SUBJECT_ID}/episode{#}.csv```. This script requires two files, one that maps event ITEMIDs to clinical variables and another that defines valid ranges for clinical variables (for detecting outliers, etc.). **Outlier detection is disabled in the current version**.
 
        python -m mimic3benchmark.scripts.extract_episodes_from_subjects data/root/
