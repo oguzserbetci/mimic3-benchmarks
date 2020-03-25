@@ -114,15 +114,15 @@ def add_start_end_hours_elapsed_to_events(events, dt, remove_charttime=True):
         # Add 24 hours to CHARTDATE to make sure no information leakage
         event_times.fillna(events.CHARTDATE + np.timedelta64(1, 'D'))
     # Add 24 hours to STARTDATE to make sure no information leakage
-    if event_times in ['STARTDATE']:
-        event_times += np.timedelta64(1, 'D')
+    if 'STARTDATE' in events.columns:
+        event_times.apply(lambda s: s + np.timedelta64(1, 'D'))
     event_times = event_times.ix[:,0]
 
     if set(events.columns) & {'ENDTIME', 'ENDDATE'}:
         event_finish_times = events[events.columns & ['ENDTIME', 'ENDDATE']].ix[:,0]
         # Add 24 hours to ENDDATE to make sure no information leakage
         if 'ENDDATE' in events.columns:
-            event_finish_times += np.timedelta(1, 'D')
+            event_finish_times.apply(lambda s: s + np.timedelta(1, 'D'))
         events['ENDHOURS'] = (event_finish_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
 
     events['HOURS'] = (event_times - dt).apply(lambda s: s / np.timedelta64(1, 's')) / 60./60
