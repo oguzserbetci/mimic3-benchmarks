@@ -96,6 +96,6 @@ for subject_dir in os.listdir(args.subjects_root_path):
             stay_events = stay_events[columns_sorted]
 
             if len(stay_events) > 0:
-                stay_events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_{}.csv'.format(i+1, table)), index_label='Hours')
+                stay_events.to_csv(os.path.join(args.subjects_root_path, subject_dir, 'episode{}_timeseries_{}.csv'.format(i+1, table)), index_label='Hours')
 
     sys.stdout.write(' DONE!\n')
