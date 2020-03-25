@@ -86,7 +86,6 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
 
                 # find all event in ICU, skip globally if there is no event in ICU
                 df = pd.read_csv(os.path.join(patient_folder, ts_filename), dtype=dtypes)
-                header = df.columns
                 ts_lines = df[(-eps < df["Hours"]) & (df["Hours"] < los + eps)]
                 event_times = ts_lines.Hours
 
