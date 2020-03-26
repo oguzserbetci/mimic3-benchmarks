@@ -67,7 +67,7 @@ def process_partition(args, definitions, code_to_group, id_to_group, group_to_id
         for ts_filename in patient_ts_files:
             # TODO not updated
             with open(os.path.join(patient_folder, ts_filename)) as ts_file:
-                lb_filename = re.sub(r"_timeseries[a-z_]*", "", ts_filename)
+                lb_filename = re.sub(r"_timeseries[A-Z_]*", "", ts_filename)
                 try:
                     label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))
                 except:
