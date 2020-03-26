@@ -48,18 +48,19 @@ def read_events_table_by_row(mimic3_path, table):
                'LABEVENTS': 27854056,
                'OUTPUTEVENTS': 4349219,
                'DATETIMEEVENTS': 4485937,
-               'DIAGNOSES_ICD': 651048,
+               # 'DIAGNOSES_ICD': 651048,
                'INPUTEVENTS_CV': 17527936,
                'INPUTEVENTS_MV': 3618992,
                'NOTEEVENTS': 91691299,
                'OUTPUTEVENTS': 4349219,
                'PRESCRIPTIONS': 4156451,
-               'PROCEDURES_ICD': 240096,
+               # 'PROCEDURES_ICD': 240096,
                'PROCEDUREEVENTS_MV': 258066,
                'CPTEVENTS': 573147,
                'MICROBIOLOGYEVENTS': 631727,
                # 'TRANSFERS': None, Cohort excludes transfered patiens
-               'SERVICES': 73344}
+               # 'SERVICES': 73344
+    }
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
         if 'ICUSTAY_ID' not in row:
