@@ -44,22 +44,22 @@ def read_icd_diagnoses_table(mimic3_path):
 
 
 def read_events_table_by_row(mimic3_path, table):
-    nb_rows = {'CHARTEVENTS': 330712484,
-               'LABEVENTS': 27854056,
-               'OUTPUTEVENTS': 4349219,
-               'DATETIMEEVENTS': 4485937,
-               # 'DIAGNOSES_ICD': 651048,
-               'INPUTEVENTS_CV': 17527936,
-               'INPUTEVENTS_MV': 3618992,
-               'NOTEEVENTS': 91691299,
-               'OUTPUTEVENTS': 4349219,
-               'PRESCRIPTIONS': 4156451,
-               # 'PROCEDURES_ICD': 240096,
-               'PROCEDUREEVENTS_MV': 258066,
-               'CPTEVENTS': 573147,
-               'MICROBIOLOGYEVENTS': 631727,
-               # 'TRANSFERS': None, Cohort excludes transfered patiens
-               # 'SERVICES': 73344
+    nb_rows = {'chartevents': 330712484,
+               'labevents': 27854056,
+               'outputevents': 4349219,
+               'datetimeevents': 4485937,
+               # 'diagnoses_icd': 651048,
+               'inputevents_cv': 17527936,
+               'inputevents_mv': 3618992,
+               'noteevents': 91691299,
+               'outputevents': 4349219,
+               'prescriptions': 4156451,
+               # 'procedures_icd': 240096,
+               'procedureevents_mv': 258066,
+               'cptevents': 573147,
+               'microbiologyevents': 631727,
+               # 'transfers': None, Cohort excludes transfered patiens
+               # 'services': 73344
     }
     reader = csv.DictReader(open(os.path.join(mimic3_path, table.upper() + '.csv'), 'r'))
     for i, row in enumerate(reader):
@@ -217,7 +217,7 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
         wt = csv.DictWriter(open(tn, 'a'), fieldnames=obs_header, quoting=csv.QUOTE_MINIMAL)
         wt.writerows(data_stats.curr_obs)
 
-        if table in ['CHARTEVENTS', 'LABEVENTS', 'OUTPUTEVENTS']:
+        if table in ['chartevents', 'labevents', 'outputevents']:
             fn = os.path.join(dn, 'events.csv')
             if not os.path.isfile(fn):
                 with open(fn, 'w') as f:
@@ -248,7 +248,7 @@ def read_events_table_and_break_up_by_subject(mimic3_path, table, output_path, i
             write_current_observations()
         row_out = {k: v for k, v in row.items() if k in obs_header}
         data_stats.curr_obs.append(row_out)
-        if table in ['CHARTEVENTS', 'LABEVENTS', 'OUTPUTEVENTS']:
+        if table in ['chartevents', 'labevents', 'outputevents']:
             data_stats.curr_ev_obs.append({k: row_out.get(k, '') for k in events_header})
         data_stats.curr_subject_id = row['SUBJECT_ID']
 
