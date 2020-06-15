@@ -37,7 +37,7 @@ def read_events(subject_path, remove_null=True):
 def read_events_tables(subject_path, table_list):
     for table in table_list:
         try:
-            events = dataframe_from_csv(os.path.join(subject_path, table + '.csv'), index_col=None)
+            events = dataframe_from_csv(os.path.join(subject_path, table.upper() + '.csv'), index_col=None)
         except:
             print(subject_path, 'doesn\'t have', table)
             continue

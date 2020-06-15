@@ -29,18 +29,17 @@ args, _ = parser.parse_known_args()
 
 d_items = pd.read_csv(args.mimic + '/D_ITEMS.csv')
 d_tables = {
-    'chartevents': d_items,
-    'procedureevents_mv': d_items,
-    'outputevents': d_items,
-    'inputevents_mv': d_items,
-    'inputevents_mv': d_items,
-    'inputevents_cv': d_items,
-    'datetimeevents': d_items,
-    'labevents': pd.read_csv(args.mimic + '/D_LABITEMS.csv'),
-    'diagnoses_icd': pd.read_csv(args.mimic + '/D_ICD_DIAGNOSES.csv'),
-    'procedures_icd': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES.csv')
+    'CHARTEVENTS': d_items,
+    'PROCEDUREEVENTS_mv': d_items,
+    'OUTPUTEVENTS': d_items,
+    'INPUTEVENTS_MV': d_items,
+    'INPUTEVENTS_MV': d_items,
+    'INPUTEVENTS_CV': d_items,
+    'DATETIMEEVENTS': d_items,
+    'LABEVENTS': pd.read_csv(args.mimic + '/D_LABITEMS.csv'),
+    'DIAGNOSES_ICD': pd.read_csv(args.mimic + '/D_ICD_DIAGNOSES.csv'),
+    'PROCEDURES_ICD': pd.read_csv(args.mimic + '/D_ICD_PROCEDURES.csv')
 }
-
 
 for subject_dir in os.listdir(args.subjects_root_path):
     dn = os.path.join(args.subjects_root_path, subject_dir)
