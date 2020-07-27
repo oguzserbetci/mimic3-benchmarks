@@ -36,7 +36,9 @@ def main():
 
     metrics = [('Macro ROC AUC', 'ave_auc_macro'),
                ('Micro ROC AUC', 'ave_auc_micro'),
-               ('Weighted ROC AUC', 'ave_auc_weighted')]
+               ('Weighted ROC AUC', 'ave_auc_weighted'),
+               ('Macro AUPRC', 'ave_ap_macro'),
+               ('Micro AUPRC', 'ave_ap_micro')]
 
     data = np.zeros((df.shape[0], 50))
     for i in range(1, n_tasks + 1):
@@ -57,6 +59,11 @@ def main():
         results[m]['value'] = print_metrics_binary(data[:, 25 + i - 1], data[:, i - 1], verbose=0)['auroc']
         results[m]['runs'] = []
 
+        m = 'AUPRC of task {}'.format(i)
+        results[m] = dict()
+        results[m]['value'] = print_metrics_binary(data[:, 25 + i - 1], data[:, i - 1], verbose=0)['auprc']
+        results[m]['runs'] = []
+
     for iteration in range(args.n_iters):
         cur_data = sk_utils.resample(data, n_samples=len(data))
         ret = print_metrics_multilabel(cur_data[:, 25:], cur_data[:, :25], verbose=0)
@@ -67,8 +74,13 @@ def main():
             cur_auc = print_metrics_binary(cur_data[:, 25 + i - 1], cur_data[:, i - 1], verbose=0)['auroc']
             results[m]['runs'].append(cur_auc)
 
+            m = 'AUPRC of task {}'.format(i)
+            cur_auc = print_metrics_binary(cur_data[:, 25 + i - 1], cur_data[:, i - 1], verbose=0)['auprc']
+            results[m]['runs'].append(cur_auc)
+
     reported_metrics = [m for m, k in metrics]
     reported_metrics += ['ROC AUC of task {}'.format(i) for i in range(1, n_tasks + 1)]
+    reported_metrics += ['AUPRC of task {}'.format(i) for i in range(1, n_tasks + 1)]
 
     for m in reported_metrics:
         runs = results[m]['runs']
@@ -86,6 +98,8 @@ def main():
     print("Printing the summary of results (task specific metrics are skipped) ...")
     for i in range(1, n_tasks + 1):
         m = 'ROC AUC of task {}'.format(i)
+        del results[m]
+        m = 'AUPRC of task {}'.format(i)
         del results[m]
     print(results)
 
